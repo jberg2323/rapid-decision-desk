@@ -1,0 +1,412 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>RAPID Decision Desk</title>
+
+<style>
+/* Layout: grouped-inset surfaces on a system background, large title, sidebar list + detail pane, single column on phones. */
+:root{
+  --bg:#F2F2F7; --surface:#FFFFFF; --sunk:#F2F2F7; --fill:rgba(118,118,128,.12); --ink:#000000; --ink2:rgba(60,60,67,.85); --muted:rgba(60,60,67,.6); --line:rgba(60,60,67,.18);
+  --accent:#007AFF; --accent-ink:#FFFFFF; --accent-soft:rgba(0,122,255,.12);
+  --ok:#248A3D; --ok-soft:rgba(52,199,89,.16); --warn:#C93400; --warn-soft:rgba(255,149,0,.16); --bad:#D70015; --bad-soft:rgba(255,59,48,.12);
+  --r-blue:#007AFF; --r-green:#34C759; --r-orange:#FF9500; --r-purple:#AF52DE; --r-teal:#30B0C7;
+  --f-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",ui-sans-serif,system-ui,sans-serif;
+  --f-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",ui-sans-serif,system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,monospace;
+  --r:14px; --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#000000; --surface:#1C1C1E; --sunk:#2C2C2E; --fill:rgba(118,118,128,.24); --ink:#FFFFFF; --ink2:rgba(235,235,245,.85); --muted:rgba(235,235,245,.6); --line:rgba(84,84,88,.65);
+  --accent:#0A84FF; --accent-ink:#FFFFFF; --accent-soft:rgba(10,132,255,.22);
+  --ok:#30D158; --ok-soft:rgba(48,209,88,.2); --warn:#FF9F0A; --warn-soft:rgba(255,159,10,.2); --bad:#FF453A; --bad-soft:rgba(255,69,58,.2);
+  --r-blue:#0A84FF; --r-green:#30D158; --r-orange:#FF9F0A; --r-purple:#BF5AF2; --r-teal:#40C8E0; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#000000; --surface:#1C1C1E; --sunk:#2C2C2E; --fill:rgba(118,118,128,.24); --ink:#FFFFFF; --ink2:rgba(235,235,245,.85); --muted:rgba(235,235,245,.6); --line:rgba(84,84,88,.65);
+  --accent:#0A84FF; --accent-ink:#FFFFFF; --accent-soft:rgba(10,132,255,.22);
+  --ok:#30D158; --ok-soft:rgba(48,209,88,.2); --warn:#FF9F0A; --warn-soft:rgba(255,159,10,.2); --bad:#FF453A; --bad-soft:rgba(255,69,58,.2);
+  --r-blue:#0A84FF; --r-green:#30D158; --r-orange:#FF9F0A; --r-purple:#BF5AF2; --r-teal:#40C8E0; --shadow:none; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;letter-spacing:-.005em}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 56px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px}
+h1{font-family:var(--f-display);font-size:34px;font-weight:700;line-height:1.1;margin:0;letter-spacing:-.022em}
+.sub{color:var(--muted);margin:6px 0 0;max-width:60ch;font-size:15px;text-wrap:pretty}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.metric{background:var(--surface);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow)}
+.metric b{font:600 28px var(--f-display);font-variant-numeric:tabular-nums;letter-spacing:-.02em;order:2}
+.metric span{font-size:13px;color:var(--ink2);font-weight:500;order:1}
+.metric small{font-size:12px;color:var(--muted);order:3}
+.notice{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:12px 16px;font-size:14px}
+.main{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px;align-items:start}
+.panel{background:var(--surface);border-radius:var(--r);min-width:0;box-shadow:var(--shadow);overflow:hidden}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 10px;flex-wrap:wrap}
+.panel-h h2{font:600 20px var(--f-display);letter-spacing:-.015em;margin:0;color:var(--ink)}
+.filter{display:inline-flex;background:var(--fill);padding:2px;border-radius:9px;gap:0}
+.filter button{border:0;background:transparent;color:var(--ink);font:500 13px var(--f-body);padding:5px 12px;border-radius:7px;cursor:pointer;transition:background .2s,box-shadow .2s}
+.filter button[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+.list{display:flex;flex-direction:column;padding:0 8px 8px}
+.item{display:flex;flex-direction:column;gap:5px;padding:12px 12px;border:0;border-radius:10px;background:transparent;color:inherit;text-align:left;cursor:pointer;font:inherit;width:100%;position:relative;transition:background .15s}
+.item+.item::before{content:"";position:absolute;top:0;left:12px;right:12px;border-top:.5px solid var(--line)}
+.item:hover{background:var(--sunk)}
+.item[aria-current="true"]{background:var(--accent)} .item[aria-current="true"]::before,.item[aria-current="true"]+.item::before{border-color:transparent}
+.item[aria-current="true"] .q,.item[aria-current="true"] .meta{color:#fff} .item[aria-current="true"] .pill{background:rgba(255,255,255,.22);color:#fff} .item[aria-current="true"] .flag{color:#fff}
+.item .q{font-weight:600;font-size:15px;text-wrap:pretty;letter-spacing:-.01em}
+.item .meta{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;font:600 11px var(--f-body);padding:3px 8px;border-radius:999px;background:var(--fill);color:var(--ink2);white-space:nowrap}
+.pill.framing{background:var(--warn-soft);color:var(--warn)}
+.pill.input,.pill.recommended{background:var(--accent-soft);color:var(--accent)}
+.pill.decided{background:var(--ok-soft);color:var(--ok)}
+.pill.communicated{background:var(--ok);color:#fff}
+.pill.reopened{background:var(--bad-soft);color:var(--bad)}
+.flag{font:600 12px var(--f-body);color:var(--bad)}
+.empty{padding:40px 22px;color:var(--muted);text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.empty strong{color:var(--ink);font-size:17px;font-weight:600}
+.btn{border:0;background:var(--fill);color:var(--accent);font:500 15px var(--f-body);padding:8px 16px;border-radius:999px;cursor:pointer;white-space:nowrap;transition:filter .15s,transform .1s}
+.btn:hover{filter:brightness(.96)} .btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.danger{color:var(--bad)} .btn.small{padding:5px 12px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent-soft);outline-offset:1px;box-shadow:0 0 0 1px var(--accent)}
+.editor{padding:22px;display:flex;flex-direction:column;gap:26px}
+.ed-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.health{border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.health.clean{background:var(--ok-soft);color:var(--ok)}
+.health.issues{background:var(--bad-soft);color:var(--bad)}
+.health ul{margin:0;padding-left:18px;color:var(--ink2)}
+.step{display:flex;flex-direction:column;gap:14px}
+.step h3{font:700 22px var(--f-display);letter-spacing:-.018em;margin:0;display:flex;flex-direction:column;gap:2px}
+.step h3 .n{font:600 12px var(--f-body);color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+.hint{font-size:13px;color:var(--muted);font-weight:400}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label,.lbl{font-size:13px;font-weight:500;color:var(--muted)}
+input[type=text],input[type=email],input[type=date],select,textarea{font:inherit;font-size:15px;color:var(--ink);background:var(--sunk);border:0;border-radius:10px;padding:10px 12px;width:100%;min-width:0;transition:box-shadow .15s}
+select{appearance:auto}
+textarea{resize:vertical;min-height:64px}
+.qinput{font:600 22px var(--f-display)!important;letter-spacing:-.018em;background:transparent!important;padding:4px 0!important;border-radius:0!important;border-bottom:.5px solid var(--line)!important}
+.roles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.role{background:var(--sunk);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.role input[type=text],.role input[type=email],.role select{background:var(--surface)}
+.role.wide{grid-column:1/-1}
+.role-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.letter{font:700 15px var(--f-display);color:#fff;width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px}
+.roles .role:nth-child(1) .letter{background:var(--r-blue)}
+.roles .role:nth-child(2) .letter{background:var(--r-green)}
+.roles .role:nth-child(3) .letter{background:var(--r-orange)}
+.roles .role:nth-child(4) .letter{background:var(--r-purple)}
+.roles .role:nth-child(5) .letter{background:var(--r-teal)}
+.role-h b{font-size:16px;font-weight:600;letter-spacing:-.01em} .role-h .hint{flex:1 1 100%}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center}
+.prow.three{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto auto}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);white-space:nowrap}
+.chk input{accent-color:var(--accent);margin:0;width:18px;height:18px}
+.ai{background:var(--accent-soft);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.ai textarea{background:var(--surface)}
+.status{font-size:13px;color:var(--muted)}
+.script{background:var(--warn-soft);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--ink2)}
+.script b{color:var(--ink)} .script p{margin:0} .script q{font-style:normal}
+.timeline{display:flex;flex-direction:column;font-size:14px;background:var(--sunk);border-radius:12px;overflow:hidden}
+.timeline div{display:grid;grid-template-columns:90px minmax(0,1fr);gap:12px;padding:10px 14px}
+.timeline div+div{border-top:.5px solid var(--line)}
+.timeline span:first-child{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.err{color:var(--bad);background:var(--bad-soft);border-radius:10px;padding:10px 12px;font-size:14px}
+.foot{font-size:12px;color:var(--muted);text-align:center}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:30px}}
+@media (max-width:560px){.grid2,.roles{grid-template-columns:minmax(0,1fr)}.prow,.prow.three{grid-template-columns:minmax(0,1fr) auto}.prow>input:nth-child(2),.prow>select:nth-child(2){grid-column:1/-1;grid-row:2}.editor{padding:16px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>RAPID Decision Desk</h1>
+      <p class="sub">Name the decision that unlocks the work, give every role to one named person, and log the announcement so nobody "forgets" it was made.</p>
+    </div>
+    <button class="btn primary" id="new-dec">New decision</button>
+  </header>
+
+  <div class="metrics">
+    <div class="metric"><span>Open decisions</span><b id="m-open">–</b><small>not yet decided</small></div>
+    <div class="metric"><span>Decided, not announced</span><b id="m-silent">–</b><small>the tree in the woods</small></div>
+    <div class="metric"><span>Reversals</span><b id="m-rev">–</b><small>leadership amnesia count</small></div>
+    <div class="metric"><span>Clean role maps</span><b id="m-clean">–</b><small>no health flags</small></div>
+  </div>
+
+  <div class="notice" id="notice" hidden></div>
+
+  <div class="main">
+    <div class="panel">
+      <div class="panel-h"><h2>Decision log</h2>
+        <div class="filter" id="filter">
+          <button data-f="open" aria-pressed="true">Open</button>
+          <button data-f="done" aria-pressed="false">Done</button>
+          <button data-f="all" aria-pressed="false">All</button>
+        </div>
+      </div>
+      <div class="list" id="list"><div class="empty">Loading decisions…</div></div>
+    </div>
+    <div class="panel">
+      <div class="empty" id="ed-empty"><strong>Pick a decision, or start a new one.</strong><span>Start by writing the decision as a question someone can answer.</span></div>
+      <div class="editor" id="editor" hidden></div>
+    </div>
+  </div>
+  <p class="foot">Built on Rachel Peck's three steps: identify the decision, assign roles at the right level, communicate. Changes save automatically.</p>
+</div>
+
+<script>
+(function(){
+  const STATUS=[["framing","Framing"],["input","Gathering input"],["recommended","Recommended"],["decided","Decided"],["communicated","Communicated"],["reopened","Reopened"]];
+  const A_REASONS=[["legal","Legal"],["compliance","Compliance"],["budget","Budget"],["other","Other (opinion)"]];
+  const H=36e5;
+  let db=null, sample=null, decs=[], sel=null, filt="open", loaded=false;
+  const $=id=>document.getElementById(id);
+  function el(tag,attrs,...kids){const n=document.createElement(tag);if(attrs)for(const k in attrs){const v=attrs[k];if(v==null||v===false)continue;if(k==="class")n.className=v;else if(k==="text")n.textContent=v;else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else if(k==="value")n.value=v;else if(k==="checked")n.checked=!!v;else n.setAttribute(k,v===true?"":v);}for(const c of kids){if(c==null)continue;n.append(c.nodeType?c:document.createTextNode(c));}return n;}
+  const fmt=iso=>iso?new Date(iso).toLocaleDateString(undefined,{month:"short",day:"numeric"}):"";
+  const nowIso=()=>new Date().toISOString();
+  const looksLikeGroup=s=>/\b(team|leadership|department|committee|board|everyone|all|group|we)\b/i.test(String(s||""));
+
+  // ---------- health checks from the talk ----------
+  function health(d){
+    const out=[];
+    const q=String(d.question||"").trim();
+    if(!q)out.push("Write the decision as a question someone can answer.");
+    else if(!/\?$/.test(q))out.push("Phrase the decision as a question, so it's clear when it's answered.");
+    if(!String(d.unlocks||"").trim())out.push("Say what work this decision unlocks. If nothing is blocked on it, it may be the wrong decision.");
+    const D=d.D||{};
+    if(!String(D.name||"").trim())out.push("Name one decision-maker (D).");
+    else if(looksLikeGroup(D.name))out.push("The D is a group. Name one person with an email address.");
+    else if(!String(D.email||"").trim())out.push("Add the D's email, so you can ask them to decide.");
+    const R=d.R||{};
+    if(!String(R.name||"").trim())out.push("Name one recommender (R) who gathers input and makes the call to the D.");
+    else if(looksLikeGroup(R.name))out.push("The R is a group. Name one person.");
+    for(const a of d.A||[]){if(a.reason==="other"||!a.reason)out.push((a.name||"An approver")+" has a veto for an opinion. Vetoes are only for legal, compliance or budget.");}
+    if((d.A||[]).length>2)out.push("More than two vetoes. Not every decision needs an A.");
+    const I=d.I||[];
+    if(I.length>6)out.push(I.length+" inputs is consensus territory. Input isn't a vote. Trim to the perspectives you need.");
+    const st=d.status||"framing";
+    if((st==="recommended"||st==="decided"||st==="communicated")&&!String(d.recommendation||"").trim())out.push("Record the R's recommendation.");
+    if((st==="decided"||st==="communicated")&&!String(d.outcome||"").trim())out.push("Write down what was decided.");
+    if(st==="decided"&&d.decidedAt&&(Date.now()-Date.parse(d.decidedAt))/H>48)out.push("Decided over 48 hours ago and not announced yet.");
+    if(st==="communicated"&&(d.P||[]).some(p=>!p.notified))out.push("Some people doing the work (P) haven't been told.");
+    if(st==="input"&&I.length&&I.every(i=>!i.received))out.push("No input received yet.");
+    return out;
+  }
+
+  // ---------- storage ----------
+  const mem=new Map();
+  async function save(id,patch){
+    patch.updatedAt=nowIso();
+    if(db){try{await db.collection("decisions").doc(id).update(patch)}catch(e){note("Couldn't save that change ("+(e&&e.code||"error")+").")}}
+    else{Object.assign(mem.get(id),patch);fromMem()}
+  }
+  async function create(data){
+    const id=Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+    if(db){try{await db.collection("decisions").doc(id).set(data)}catch(e){note(e&&e.code==="quota_exceeded"?"Storage is full. Delete old decisions first.":"Couldn't create it.");return null}}
+    else{mem.set(id,Object.assign({id},data));fromMem()}
+    return id;
+  }
+  async function remove(id){if(db){try{await db.collection("decisions").doc(id).delete()}catch(e){note("Couldn't delete it.")}}else{mem.delete(id);fromMem()}}
+  function fromMem(){decs=[...mem.values()].sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));try{localStorage.setItem("rapid-decisions",JSON.stringify(decs))}catch(e){}renderAll()}
+  function note(t){const n=$("notice");n.textContent=t;n.hidden=false}
+  const timers={};
+  function saveSoon(id,field,value){const k=id+field;clearTimeout(timers[k]);timers[k]=setTimeout(()=>save(id,{[field]:value}),500)}
+  function addEvent(d,event,extra){return (d.history||[]).concat([{at:nowIso(),event,note:extra||""}])}
+
+  // ---------- metrics & list ----------
+  function renderMetrics(){
+    const open=decs.filter(d=>!["decided","communicated"].includes(d.status||"framing")).length;
+    const silent=decs.filter(d=>d.status==="decided").length;
+    const rev=decs.reduce((s,d)=>s+(d.reopenCount||0),0);
+    $("m-open").textContent=open;$("m-silent").textContent=silent;$("m-rev").textContent=rev;
+    $("m-clean").textContent=decs.length?Math.round(decs.filter(d=>!health(d).length).length/decs.length*100)+"%":"–";
+  }
+  function renderList(){
+    const box=$("list");if(!loaded)return;box.replaceChildren();
+    const shown=decs.filter(d=>filt==="all"?true:filt==="done"?d.status==="communicated":d.status!=="communicated");
+    if(!shown.length){box.append(el("div",{class:"empty"},el("strong",{text:filt==="done"?"Nothing announced yet.":"No open decisions."}),el("span",{text:"Start one when you notice the team swirling."})));return}
+    for(const d of shown){
+      const st=STATUS.find(s=>s[0]===(d.status||"framing"));
+      const n=health(d).length;
+      box.append(el("button",{class:"item","aria-current":d.id===sel?"true":"false",onclick:()=>{sel=d.id;$("editor").dataset.id="";renderList();renderEditor()}},
+        el("span",{class:"q",text:d.question||"Untitled decision"}),
+        el("span",{class:"meta"},el("span",{class:"pill "+st[0],text:st[1]}),d.D&&d.D.name?el("span",{text:"D: "+d.D.name}):null,d.due?el("span",{text:"due "+fmt(d.due+"T12:00:00")}):null,n?el("span",{class:"flag",text:n+" flag"+(n>1?"s":"")}):null,d.reopenCount?el("span",{class:"flag",text:"reopened ×"+d.reopenCount}):null)));
+    }
+  }
+
+  // ---------- editor ----------
+  function field(label,input,id){input.id=id;return el("div",{class:"field"},el("label",{for:id,text:label}),input)}
+  function txt(d,key,ph,rows){const a=rows?el("textarea",{placeholder:ph||"",rows}):el("input",{type:"text",placeholder:ph||""});a.value=d[key]||"";a.addEventListener("input",()=>saveSoon(d.id,key,a.value));return a}
+  function person(d,key,ph){
+    const o=d[key]||{};
+    const n=el("input",{type:"text",placeholder:ph,"aria-label":key+" name"});n.value=o.name||"";
+    const e=el("input",{type:"email",placeholder:"email","aria-label":key+" email"});e.value=o.email||"";
+    const push=()=>saveSoon(d.id,key,{name:n.value,email:e.value});
+    n.addEventListener("input",push);e.addEventListener("input",push);
+    return el("div",{class:"prow",style:"grid-template-columns:minmax(0,1fr) minmax(0,1fr)"},n,e);
+  }
+  function listRole(d,key,cfg){
+    const box=el("div",{style:"display:flex;flex-direction:column;gap:6px"});
+    const items=(d[key]||[]).map(x=>Object.assign({},x));
+    const commit=()=>save(d.id,{[key]:items});
+    const commitSoon=()=>{clearTimeout(timers[d.id+key]);timers[d.id+key]=setTimeout(commit,500)};
+    items.forEach((it,i)=>{
+      const n=el("input",{type:"text",placeholder:"Name","aria-label":cfg.label+" name"});n.value=it.name||"";n.addEventListener("input",()=>{it.name=n.value;commitSoon()});
+      let mid;
+      if(cfg.kind==="A"){mid=el("select",{"aria-label":"Veto reason"},el("option",{value:"",text:"Veto reason…"}),...A_REASONS.map(r=>el("option",{value:r[0],text:r[1]})));mid.value=it.reason||"";mid.addEventListener("change",()=>{it.reason=mid.value;commit()})}
+      else{mid=el("input",{type:"text",placeholder:cfg.kind==="I"?"Their input, in a line":"What they'll do","aria-label":"detail"});mid.value=it.note||"";mid.addEventListener("input",()=>{it.note=mid.value;commitSoon()})}
+      const kids=[n,mid];
+      if(cfg.flag){const c=el("input",{type:"checkbox",checked:!!it[cfg.flag]});c.addEventListener("change",()=>{it[cfg.flag]=c.checked;commit()});kids.push(el("label",{class:"chk"},c,cfg.flagLabel))}
+      const x=el("button",{class:"btn small danger","aria-label":"Remove "+(it.name||cfg.label),text:"Remove"});x.addEventListener("click",()=>{items.splice(i,1);$("editor").dataset.id="";commit()});
+      kids.push(x);
+      box.append(el("div",{class:"prow"+(cfg.flag?" three":"")},...kids));
+    });
+    const add=el("button",{class:"btn small",text:"Add "+cfg.label});add.addEventListener("click",()=>{items.push(cfg.kind==="A"?{name:"",reason:""}:{name:"",note:""});$("editor").dataset.id="";commit()});
+    box.append(el("div",{},add));
+    return box;
+  }
+
+  function renderEditor(){
+    const ed=$("editor"),empty=$("ed-empty");
+    let d=decs.find(x=>x.id===sel);
+    if(!d){ed.hidden=true;empty.hidden=false;return}
+    const ae=document.activeElement;
+    if(ed.dataset.id===d.id&&ed.contains(ae)&&(ae.tagName==="TEXTAREA"||(ae.tagName==="INPUT"&&ae.type!=="checkbox"))){renderHealthOnly(d);return}
+    ed.dataset.id=d.id;empty.hidden=true;ed.hidden=false;ed.replaceChildren();
+    const cur=()=>decs.find(x=>x.id===d.id)||d;
+
+    // top bar
+    const st=el("select",{"aria-label":"Status"},...STATUS.map(s=>el("option",{value:s[0],text:s[1]})));st.value=d.status||"framing";
+    const stErr=el("div",{class:"err",hidden:true});
+    st.addEventListener("change",()=>{
+      const c=cur(),v=st.value,p={status:v};
+      if((v==="decided"||v==="communicated")&&!(c.D&&String(c.D.name||"").trim())){stErr.textContent="Name the D before marking this decided.";stErr.hidden=false;st.value=c.status||"framing";return}
+      if((v==="decided"||v==="communicated")&&!String(c.outcome||"").trim()){stErr.textContent="Write down what was decided first (step 3).";stErr.hidden=false;st.value=c.status||"framing";return}
+      if(v==="reopened"){stErr.textContent="Use “Reopen decision” in step 3, so the reason is logged.";stErr.hidden=false;st.value=c.status||"framing";return}
+      stErr.hidden=true;
+      if(v==="decided"&&!c.decidedAt)p.decidedAt=nowIso();
+      if(v==="communicated"){p.communicatedAt=nowIso();if(!c.decidedAt)p.decidedAt=nowIso()}
+      p.history=addEvent(c,"Status: "+STATUS.find(s=>s[0]===v)[1]);
+      save(d.id,p);
+    });
+    const due=el("input",{type:"date","aria-label":"Decide by"});due.value=d.due||"";due.addEventListener("change",()=>save(d.id,{due:due.value}));
+    const copy=el("button",{class:"btn",text:"Copy announcement"});copy.addEventListener("click",()=>copyText(announcement(cur()),copy,"Copy announcement"));
+    const del=el("button",{class:"btn danger",text:"Delete"});
+    del.addEventListener("click",()=>{if(del.dataset.armed){remove(d.id);sel=null}else{del.dataset.armed="1";del.textContent="Click again to delete";setTimeout(()=>{if(del.isConnected){delete del.dataset.armed;del.textContent="Delete"}},3000)}});
+    ed.append(el("div",{class:"ed-top"},el("div",{class:"row"},el("label",{class:"lbl",for:"f-status",text:"Status"}),Object.assign(st,{id:"f-status"}),el("label",{class:"lbl",for:"f-due",text:"Decide by"}),Object.assign(due,{id:"f-due"})),el("div",{class:"row"},copy,del)),stErr);
+    ed.append(el("div",{id:"health"}));renderHealthOnly(d);
+
+    // STEP 1
+    const q=txt(d,"question","Who is coming on the trip: the whole family, or just the two of us?");q.classList.add("qinput");
+    const s1=el("section",{class:"step"},el("h3",{},el("span",{class:"n",text:"STEP 1"}),"Identify the decision that unlocks the work"),
+      field("The decision, as a question",q,"f-q"),
+      el("div",{class:"grid2"},
+        field("What work does this unlock?",txt(d,"unlocks","Once this is decided, we can…",2),"f-unl"),
+        field("Context (facts, not decisions)",txt(d,"context","The team is fully remote. Budget is fixed at…",2),"f-ctx")));
+    if(sample){
+      const ta=el("textarea",{id:"f-swirl",rows:3,placeholder:"Paste the swirl: the Slack thread, meeting notes, or a rant about what's stuck"});
+      const go=el("button",{class:"btn primary",text:"Find the real decision"});const msg=el("span",{class:"status"});
+      go.addEventListener("click",()=>sharpen(cur(),ta.value,go,msg));
+      s1.append(el("div",{class:"ai"},el("label",{class:"lbl",for:"f-swirl",text:"Stuck? Let Claude separate context from the decision"}),ta,el("div",{class:"row"},go,msg),el("span",{class:"hint",text:"Fills the question, what it unlocks, and context if they're empty, and lists other decisions hiding in the swirl."})));
+    }
+    ed.append(s1);
+
+    // STEP 2
+    const roles=el("div",{class:"roles"},
+      el("div",{class:"role"},el("div",{class:"role-h"},el("span",{class:"letter",text:"R"}),el("b",{text:"Recommend"}),el("span",{class:"hint",text:"One person. Gathers input, does the analysis, makes the call to the D."})),person(d,"R","Name")),
+      el("div",{class:"role"},el("div",{class:"role-h"},el("span",{class:"letter",text:"D"}),el("b",{text:"Decide"}),el("span",{class:"hint",text:"One human with an email address, at the lowest level with real authority."})),person(d,"D","Name")),
+      el("div",{class:"role wide"},el("div",{class:"role-h"},el("span",{class:"letter",text:"A"}),el("b",{text:"Approve (veto)"}),el("span",{class:"hint",text:"Not every decision has an A. Vetoes are for legal, compliance or budget, not opinions."})),listRole(d,"A",{kind:"A",label:"approver"})),
+      el("div",{class:"role wide"},el("div",{class:"role-h"},el("span",{class:"letter",text:"I"}),el("b",{text:"Input"}),el("span",{class:"hint",text:"Input is not consensus. Tell people up front whether they're input."})),listRole(d,"I",{kind:"I",label:"input",flag:"received",flagLabel:"received"})),
+      el("div",{class:"role wide"},el("div",{class:"role-h"},el("span",{class:"letter",text:"P"}),el("b",{text:"Perform"}),el("span",{class:"hint",text:"The people who carry it out. They must hear the decision."})),listRole(d,"P",{kind:"P",label:"performer",flag:"notified",flagLabel:"told"})));
+    const s2=el("section",{class:"step"},el("h3",{},el("span",{class:"n",text:"STEP 2"}),"Assign roles at the right level"),roles);
+    const vetoOpinion=(d.A||[]).find(a=>a.reason==="other"||!a.reason);
+    if(vetoOpinion){
+      const who=vetoOpinion.name||"them";
+      s2.append(el("div",{class:"script"},el("b",{text:"The role conversation with "+who}),
+        el("p",{},el("q",{text:"I don't think a veto is the right role here, since this isn't a legal, compliance or budget call. What role do you want to play?"})),
+        el("p",{},el("q",{text:"If you want a strong voice, you can be the D and I'll bring you a recommendation. Or you can be input, and I'll make sure you're heard. Or you can trust the D and skip this one."})),
+        el("p",{class:"hint",text:"Argue about roles, not content. It's easier to agree on who decides than on the doorknobs."})));
+    }
+    ed.append(s2);
+
+    // STEP 3
+    const hist=el("div",{class:"timeline"});
+    for(const h of (d.history||[]).slice().reverse())hist.append(el("div",{},el("span",{text:fmt(h.at)}),el("span",{text:h.event+(h.note?" — "+h.note:"")})));
+    const reopenReason=el("input",{type:"text",id:"f-rr",placeholder:"Why is this being reopened?"});
+    const reopenBy=el("input",{type:"text",id:"f-rb",placeholder:"Who reopened it?"});
+    const reopenErr=el("div",{class:"err",hidden:true});
+    const reopen=el("button",{class:"btn danger",text:"Reopen decision"});
+    reopen.addEventListener("click",()=>{
+      const c=cur();
+      if(!reopenReason.value.trim()||!reopenBy.value.trim()){reopenErr.textContent="Log who reopened it and why. That's how you catch leadership amnesia.";reopenErr.hidden=false;return}
+      const byD=c.D&&c.D.name&&reopenBy.value.trim().toLowerCase()===String(c.D.name).trim().toLowerCase();
+      const n=byD?"":" (not the D: pocket veto?)";
+      save(d.id,{status:"reopened",reopenCount:(c.reopenCount||0)+1,history:addEvent(c,"Reopened by "+reopenBy.value.trim()+n,reopenReason.value.trim())});
+      $("editor").dataset.id="";
+    });
+    const s3=el("section",{class:"step"},el("h3",{},el("span",{class:"n",text:"STEP 3"}),"Decide, then communicate, communicate, communicate"),
+      el("div",{class:"grid2"},
+        field("R's recommendation",txt(d,"recommendation","I recommend… because…",3),"f-rec"),
+        field("What was decided",txt(d,"outcome","We will…",3),"f-out")),
+      el("div",{class:"grid2"},
+        field("Rationale for the announcement",txt(d,"rationale","Why, in two sentences",2),"f-rat"),
+        field("Where it was announced",txt(d,"channels","Leadership Slack, all-hands, email to P's",2),"f-ch")),
+      el("div",{class:"field"},el("span",{class:"lbl",text:"Reopen (logs a reversal)"}),el("div",{class:"prow"},reopenBy,reopenReason,reopen)),reopenErr,
+      el("div",{class:"field"},el("span",{class:"lbl",text:"History"}),hist.childElementCount?hist:el("span",{class:"hint",text:"Status changes and reversals appear here."})));
+    ed.append(s3);
+  }
+  function renderHealthOnly(d){
+    const box=$("health");if(!box)return;const h=health(d);box.replaceChildren();
+    if(!h.length)box.append(el("div",{class:"health clean"},el("b",{text:"Clean role map. Ready to move."})));
+    else box.append(el("div",{class:"health issues"},el("b",{text:h.length+" thing"+(h.length>1?"s":"")+" will cause swirl:"}),el("ul",{},...h.map(t=>el("li",{text:t})))));
+  }
+
+  function announcement(d){
+    const names=a=>(a||[]).map(x=>x.name).filter(Boolean).join(", ");
+    return ["Decision: "+(d.question||"–"),"",
+      "Decided: "+(d.outcome||"(not yet decided)"),
+      d.rationale?"Why: "+d.rationale:null,"",
+      "Decision-maker: "+((d.D&&d.D.name)||"–")+(d.decidedAt?" on "+fmt(d.decidedAt):""),
+      "Recommended by: "+((d.R&&d.R.name)||"–"),
+      (d.I||[]).length?"Input from: "+names(d.I):null,
+      (d.P||[]).length?"Owners carrying it out: "+names(d.P):null,"",
+      "This is decided. Questions go to "+((d.D&&d.D.name)||"the decision-maker")+"."].filter(x=>x!==null).join("\n");
+  }
+  function copyText(t,btn,label){
+    const ok=()=>{btn.textContent="Copied";setTimeout(()=>btn.textContent=label,1500)};
+    const fb=()=>{const ta=el("textarea",{rows:10});ta.value=t;btn.closest(".editor").prepend(ta);ta.select();btn.textContent="Select and copy"};
+    try{navigator.clipboard.writeText(t).then(ok,fb)}catch(e){fb()}
+  }
+  async function sharpen(d,src,btn,msg){
+    if(!src.trim()){msg.textContent="Paste the swirl first.";return}
+    btn.disabled=true;msg.textContent="Reading the swirl… up to a minute.";
+    const prompt="You coach chiefs of staff on decision-making with the RAPID framework. A team is swirling. From the text below: (1) identify the ONE decision that, once made, unlocks the rest of the work (often not the obvious one; e.g. 'who is going' must come before 'where do we go'); phrase it as a question with a clear answer. (2) Separate context (facts and constraints) from decisions. (3) List up to 4 other decisions hiding in the swirl, in the order they should be made. Return ONLY JSON: {\"question\": string, \"unlocks\": string (one sentence), \"context\": string (short bullet-like sentences), \"others\": [string]}. Do not invent facts.\n\nTEXT:\n"+src.slice(0,20000);
+    try{
+      const r=await sample.json(prompt,{modelTier:"default",cache:false});
+      const p={};
+      for(const k of ["question","unlocks","context"])if(r&&typeof r[k]==="string"&&r[k].trim()&&!String(d[k]||"").trim())p[k]=r[k].trim();
+      const others=Array.isArray(r&&r.others)?r.others.filter(x=>typeof x==="string").slice(0,4):[];
+      if(others.length){const extra="Other decisions in the swirl: "+others.join(" | ");p.context=((p.context||d.context||"")+"\n"+extra).trim()}
+      if(Object.keys(p).length){p.history=addEvent(d,"Claude framed the decision");await save(d.id,p);$("editor").dataset.id="";msg.textContent="Framed. Check the question before you assign roles."}
+      else msg.textContent="Your fields already have content. Clear the question to reframe.";
+    }catch(e){msg.textContent=e&&e.code==="not_granted"?"Claude wasn't allowed for this page.":e&&e.code==="rate_limited"?"Too many requests. Try again in a minute.":"Couldn't frame this one. Try a shorter paste."}
+    finally{btn.disabled=false}
+  }
+
+  function renderAll(){renderMetrics();renderList();renderEditor()}
+
+  // ---------- controls ----------
+  $("filter").addEventListener("click",e=>{const b=e.target.closest("button[data-f]");if(!b)return;filt=b.dataset.f;for(const x of $("filter").children)x.setAttribute("aria-pressed",x===b);renderList()});
+  $("new-dec").addEventListener("click",async()=>{const t=nowIso();const id=await create({question:"",unlocks:"",context:"",status:"framing",createdAt:t,R:{},D:{},A:[],I:[],P:[],history:[{at:t,event:"Created"}],reopenCount:0});if(id){sel=id;filt="open";for(const x of $("filter").children)x.setAttribute("aria-pressed",x.dataset.f==="open");$("editor").dataset.id="";renderAll();setTimeout(()=>{const q=$("f-q");if(q)q.focus()},300)}});
+  setInterval(()=>{renderMetrics();renderList()},60000);
+
+  renderAll();
+  (async()=>{
+    const c=window.claude;
+    const local=()=>{loaded=true;let saved=[];try{saved=JSON.parse(localStorage.getItem("rapid-decisions")||"[]")}catch(e){}if(Array.isArray(saved)){for(const d of saved)mem.set(d.id,d)}else{note("Saving isn't available in this browser. Decisions will be lost when you close the page.")}fromMem()};
+    if(!c||!c.use)return local();
+    try{db=await c.use("db")}catch(e){db=null}
+    try{sample=await c.use("sample")}catch(e){sample=null}
+    if(!db)return local();
+    db.collection("decisions").orderBy("createdAt","desc").onSnapshot(s=>{loaded=true;decs=s.docs.map(x=>Object.assign({id:x.id},x.data()));if(sel&&!decs.find(d=>d.id===sel))sel=null;if(!sel&&decs.length&&window.innerWidth>900)sel=decs[0].id;renderAll()},()=>note("Lost the connection. Reload to reconnect."));
+  })();
+})();
+</script>
+</body></html>
